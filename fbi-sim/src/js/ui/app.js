@@ -32,7 +32,6 @@ export class App {
   // ---------------------------------------------------------------- startup
   async init() {
     this.applySettings();
-    $('#insigniaLogin').innerHTML = await fetch('assets/insignia.svg').then(r => r.text()).catch(() => '');
     this.setupLogin();
     this.setupNewCase();
     this.setupDesktop();

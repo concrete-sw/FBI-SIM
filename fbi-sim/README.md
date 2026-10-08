@@ -22,7 +22,7 @@ The **code owns the game state; the AI narrates and role-plays inside it.**
    motive, means and opportunity, every piece of evidence (where it is, what a
    close look shows, what the lab shows, who it points to), locations,
    witnesses, red herrings, and at least three independent clues that together
-   prove guilt. The JSON is validated (`js/engine/schema.js`) and regenerated
+   prove guilt. The JSON is validated (`src/js/engine/schema.js`) and regenerated
    with the validation errors fed back if it is not playable.
 2. **Every GM turn** sends the GM system prompt, the case truth, the current
    state (what you have found, in-game time, every suspect's mood, rapport and
@@ -39,28 +39,30 @@ The **code owns the game state; the AI narrates and role-plays inside it.**
 The GM rules (stay in character, never reveal, never contradict, fair play,
 how to voice innocent and guilty suspects, warrants and probable cause, Miranda,
 chain of custody, consequences of bad procedure, hints that cost score, and so
-on) live in `js/prompts/gmSystem.js`. Read it; it is the heart of the game.
+on) live in `src/js/prompts/gmSystem.js`. Read it; it is the heart of the game.
 
-## Running it
+## Quick start (no tools needed)
 
-It is a static site: HTML, CSS and ES modules, no build step. Browsers block
-ES modules on `file://`, so serve the folder with any static server:
+1. Download the project: on GitHub click the green **Code** button, then
+   **Download ZIP**, and unzip it anywhere.
+2. Open the `fbi-sim` folder and **double-click `index.html`**. It opens in
+   your browser. Press any key to skip the boot screen.
+3. On the login screen type an agent name, pick your AI provider, paste your
+   API key (see the table below for where to get one), click
+   **Test connection**, then **Authenticate**.
+4. Pick a crime type and click **Request assignment**. Generating a case
+   takes between thirty seconds and a couple of minutes.
 
-```bash
-cd fbi-sim
-python3 -m http.server 8080
-# or: npx serve .
-```
+That is all. `index.html` is a single self-contained file: no install, no
+server, no build. It works in current Chrome, Edge, Firefox and Safari, on a
+laptop or a tablet. Your key is stored only in your browser (if you tick
+"remember") and is sent only to the provider you pick.
 
-Open <http://localhost:8080/>. Works in current Chrome, Edge, Firefox and
-Safari, on laptop and tablet widths. Keyboard: `/` focuses the command bar,
-`Alt+1..9` opens panels, `Esc` closes the focused panel, `Tab` moves through
-everything. A reduce-motion setting turns off scanlines, blinking and the
-typewriter.
+Keyboard: `/` focuses the command bar, `Alt+1..9` opens panels, `Esc` closes
+the focused panel, `Tab` moves through everything. A reduce-motion setting
+turns off scanlines, blinking and the typewriter.
 
-You can also host the folder on GitHub Pages, Netlify or any static host; there
-is no server component. Your API key is stored, if you tick "remember", only in
-your browser's localStorage, and is sent only to the provider you choose.
+You can also host the folder on GitHub Pages, Netlify or any static host.
 
 ## Getting an API key and connecting it
 
@@ -124,7 +126,7 @@ does not recognise is sent to the GM as a free action.
 
 ## Adding a provider
 
-All adapters live in `js/providers/` and share one interface:
+All adapters live in `src/js/providers/` and share one interface:
 
 ```js
 {
@@ -135,8 +137,8 @@ All adapters live in `js/providers/` and share one interface:
 ```
 
 - **OpenAI-compatible endpoint**: add one `makeOpenAICompatible({...})` entry to
-  the `PROVIDERS` array in `js/providers/index.js`. That is all.
-- **Different protocol**: copy `js/providers/gemini.js` or `anthropic.js`, implement
+  the `PROVIDERS` array in `src/js/providers/index.js`, then rebuild. That is all.
+- **Different protocol**: copy `src/js/providers/gemini.js` or `anthropic.js`, implement
   `stream()` (use `readSSE` and `throwForStatus` from `sse.js`), and add the
   object to `PROVIDERS`.
 
@@ -147,18 +149,38 @@ string; when `json` is true ask the API for a JSON object if it supports that.
 
 ```
 fbi-sim/
-  index.html            screens: boot, login, assignment desk, workstation, debrief
-  css/style.css         terminal theme, windows, responsive rules
-  assets/insignia.svg   original fictional insignia
-  js/main.js            entry point
-  js/providers/         AI provider adapters and registry
-  js/prompts/           GM system prompt, case generation, grading, summary
-  js/engine/            schema validation, state, clock, GM turn loop, grader, storage
-  js/ui/                window manager, panels, typewriter, boot, app controller
-  dev/                  offline mock GM and a sample case for UI testing
+  index.html              BUILT single-file game (double-click this). Do not edit by hand.
+  src/index.html          source page (ES modules; needs a local server to run)
+  src/css/style.css       terminal theme, windows, responsive rules
+  src/assets/insignia.svg original fictional insignia
+  src/js/main.js          entry point
+  src/js/providers/       AI provider adapters and registry
+  src/js/prompts/         GM system prompt, case generation, grading, summary
+  src/js/engine/          schema validation, state, clock, GM turn loop, grader, storage
+  src/js/ui/              window manager, panels, typewriter, boot, app controller
+  dev/build.js            bundles src/ into index.html
+  dev/mock-gm.js          offline mock GM for UI testing, with dev/sample-case.json
 ```
 
-## Developing without spending tokens
+## Developing
+
+Edit the files under `src/`, then rebuild the single-file version:
+
+```bash
+node fbi-sim/dev/build.js
+```
+
+While developing you can also serve `src/` directly so changes show without a
+rebuild (ES modules need a server):
+
+```bash
+cd fbi-sim/src && python3 -m http.server 8080   # then open http://localhost:8080
+```
+
+Commit the rebuilt `index.html` with your source changes so the double-click
+version stays current.
+
+## Testing without spending tokens
 
 `dev/mock-gm.js` is a tiny OpenAI-compatible server that returns the sample
 case and scripted replies:

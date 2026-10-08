@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>FBI-SIM · Secure Workstation</title>
+<meta name="description" content="A fictional, AI-run FBI investigation simulation that runs in your browser with your own API key.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23070a08'/%3E%3Cpath d='M16 5l9 3v9c0 7-4 11-9 14-5-3-9-7-9-14V8z' fill='none' stroke='%2366ff99' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body data-theme="green">
+<a class="skip" href="#cmdInput">Skip to command bar</a>
+<div id="scanlines" aria-hidden="true"></div>
+
+<!-- BOOT -->
+<section id="screen-boot" class="screen" aria-label="Boot sequence">
+  <pre id="bootLog" class="boot-log" aria-live="polite"></pre>
+  <button id="bootSkip" class="btn ghost small boot-skip" type="button">Skip ▸</button>
+</section>
+
+<!-- LOGIN -->
+<section id="screen-login" class="screen hidden" aria-label="Login">
+  <div class="login-card">
+    <div class="insignia" id="insigniaLogin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Fictional Bureau insignia">
+  <defs>
+    <path id="ring" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="none" stroke="currentColor" stroke-width="2"/>
+  <circle cx="100" cy="100" r="88" fill="none" stroke="currentColor" stroke-width="1" opacity=".6"/>
+  <text font-family="ui-monospace, monospace" font-size="11" letter-spacing="2.5" fill="currentColor">
+    <textPath href="#ring" startOffset="2%">FEDERAL INVESTIGATIVE SIMULATION · TRAINING DIVISION · FICTION</textPath>
+  </text>
+  <path d="M100,46 l34,12 v34 c0,26 -16,42 -34,52 c-18,-10 -34,-26 -34,-52 v-34 z" fill="none" stroke="currentColor" stroke-width="2.5"/>
+  <path d="M100,56 l25,9 v27 c0,20 -12,32 -25,40 c-13,-8 -25,-20 -25,-40 v-27 z" fill="none" stroke="currentColor" stroke-width="1" opacity=".5"/>
+  <polygon points="100,70 105.5,86 122,86 108.5,96 113.5,112 100,102 86.5,112 91.5,96 78,86 94.5,86" fill="currentColor"/>
+  <line x1="66" y1="130" x2="134" y2="130" stroke="currentColor" stroke-width="1.5"/>
+  <line x1="72" y1="136" x2="128" y2="136" stroke="currentColor" stroke-width="1" opacity=".6"/>
+  <circle cx="100" cy="100" r="2" fill="currentColor"/>
+</svg></div>
+    <h1 class="title">FEDERAL INVESTIGATIVE SIMULATION</h1>
+    <p class="banner">CLASSIFICATION: TRAINING // FICTION // NOT FOR OPERATIONAL USE</p>
+    <form id="loginForm" autocomplete="off">
+      <label>Agent name
+        <input id="agentName" type="text" maxlength="40" placeholder="e.g. Dana Reyes" required>
+      </label>
+      <label>Badge number
+        <input id="badgeNumber" type="text" readonly>
+      </label>
+      <fieldset class="api-box">
+        <legend>AI Game Master connection</legend>
+        <label>Provider
+          <select id="providerSelect"></select>
+        </label>
+        <label>API key
+          <input id="apiKey" type="password" placeholder="Paste your key" autocomplete="off" spellcheck="false">
+        </label>
+        <label>Model <span class="muted">(blank = default)</span>
+          <input id="modelInput" type="text" list="modelList" placeholder="">
+          <datalist id="modelList"></datalist>
+        </label>
+        <label id="baseUrlRow">Base URL <span class="muted">(advanced)</span>
+          <input id="baseUrl" type="text" placeholder="">
+        </label>
+        <p id="providerNotes" class="muted small"></p>
+        <label class="check"><input id="rememberKey" type="checkbox"> Remember key in this browser (localStorage; anyone with access to this browser profile can read it)</label>
+        <div class="row">
+          <button id="testConn" class="btn ghost" type="button">Test connection</button>
+          <button id="forgetKey" class="btn ghost" type="button">Forget stored key</button>
+          <span id="connStatus" class="muted small" role="status"></span>
+        </div>
+      </fieldset>
+      <div class="row">
+        <button class="btn primary" type="submit">Authenticate ▸</button>
+      </div>
+    </form>
+    <p class="muted small fiction">This is a work of fiction. The Bureau, the cases, the people and the places are invented. Nothing here is affiliated with any real agency. The insignia is an original design.</p>
+  </div>
+</section>
+
+<!-- NEW CASE / LOAD -->
+<section id="screen-newcase" class="screen hidden" aria-label="Case assignment">
+  <div class="newcase-card">
+    <header class="card-head">
+      <span class="banner">CASE ASSIGNMENT DESK</span>
+      <span id="newcaseAgent" class="muted"></span>
+    </header>
+    <div class="two-col">
+      <form id="newCaseForm">
+        <h2>Open new case</h2>
+        <label>Crime type
+          <select id="crimeType">
+            <option>Homicide</option>
+            <option>Kidnapping</option>
+            <option>Bank robbery</option>
+            <option>Wire fraud / financial crime</option>
+            <option>Cybercrime / intrusion</option>
+            <option>Public corruption</option>
+            <option>Domestic terrorism plot</option>
+            <option>Art theft</option>
+            <option>Organized crime / racketeering</option>
+            <option>Missing person (interstate)</option>
+            <option>Arson of a federal facility</option>
+            <option>Random</option>
+          </select>
+        </label>
+        <label>Difficulty
+          <select id="difficulty">
+            <option value="rookie">Rookie: forgiving clock, obvious holes</option>
+            <option value="agent" selected>Agent: realistic</option>
+            <option value="veteran">Veteran: tight clock, careful culprit</option>
+          </select>
+        </label>
+        <label>Case length
+          <select id="caseLength">
+            <option value="short">Short: 4 suspects, 48h</option>
+            <option value="standard" selected>Standard: 5 suspects, 72h</option>
+            <option value="long">Long: 6 suspects, 120h</option>
+          </select>
+        </label>
+        <button class="btn primary" type="submit">Request assignment ▸</button>
+        <p id="genStatus" class="muted small" role="status"></p>
+        <button id="genCancel" class="btn ghost small hidden" type="button">Cancel</button>
+      </form>
+      <div>
+        <h2>Resume case</h2>
+        <ul id="slotList" class="slot-list"></ul>
+        <div class="row">
+          <label class="btn ghost file-btn">Import .json<input id="importFile" type="file" accept="application/json,.json" hidden></label>
+          <button id="backToLogin" class="btn ghost" type="button">◂ Change agent / key</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DESKTOP -->
+<section id="screen-desktop" class="screen hidden" aria-label="Workstation">
+  <header class="topbar">
+    <span class="banner" id="topBanner">TRAINING // FICTION</span>
+    <span id="topCase" class="mono"></span>
+    <span id="topClock" class="mono clock" aria-live="off"></span>
+    <span id="topDeadline" class="mono deadline"></span>
+    <span id="topAgent" class="mono"></span>
+    <span id="topStatus" class="status" role="status" aria-live="polite"></span>
+  </header>
+  <nav class="dock" id="dock" aria-label="Panels"></nav>
+  <main id="windowArea" class="window-area"></main>
+  <form id="cmdBar" class="cmdbar" autocomplete="off">
+    <label for="cmdInput" class="prompt">AGENT&gt;</label>
+    <input id="cmdInput" type="text" placeholder="type a command, or use the panels. 'help' lists commands." spellcheck="false">
+    <button class="btn small" type="submit">Send</button>
+  </form>
+</section>
+
+<!-- DEBRIEF -->
+<section id="screen-debrief" class="screen hidden" aria-label="Debrief">
+  <div id="debriefBody" class="debrief"></div>
+</section>
+
+<div id="toasts" class="toasts" aria-live="polite"></div>
+<dialog id="modal" class="modal"><div id="modalBody"></div></dialog>
+
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

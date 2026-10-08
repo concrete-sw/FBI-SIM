@@ -2,6 +2,7 @@
 // SSE streaming so the game can be exercised end to end without an API key.
 //
 //   node fbi-sim/dev/mock-gm.js            # listens on http://localhost:8787/v1
+// Works with the built index.html opened from disk and with the served src/.
 //
 // In the game, pick provider "Custom (OpenAI-compatible)", base URL
 // http://localhost:8787/v1, any key. The mock serves the sample case and
