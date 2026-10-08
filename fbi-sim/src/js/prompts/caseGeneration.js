@@ -93,7 +93,8 @@ DESIGN REQUIREMENTS
 9. Witnesses' "initialStatement" may contain honest errors consistent with their "reliability" and "bias". "whatTheySaw" is the truth.
 10. "initialReport" and "supervisorBriefing" must not leak hidden facts. The briefing should be in the supervisor's voice: dry, direct, a little tired, and end with clear first steps.
 11. Everything is fictional. Invent names, companies, addresses and agencies (other than the FBI itself). No real people. Keep violence described with the restraint of a case report.
-12. Use the id conventions s1..s6 for suspects, w1..w5 for witnesses, e1..e14 for evidence, loc1..loc6 for locations.
+12. Where a value is absent, use JSON null (never the string "null", "none" or "N/A").
+13. Use the id conventions s1..s6 for suspects, w1..w5 for witnesses, e1..e14 for evidence, loc1..loc6 for locations.
 
 SCHEMA (follow exactly; no extra top-level keys):
 ${CASE_SCHEMA_TEXT}

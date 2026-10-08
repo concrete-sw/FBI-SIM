@@ -2,6 +2,16 @@
 // empty list means the case is playable. The generator regenerates on
 // problems, feeding them back to the model.
 
+// Models often write the string "null" (or "N/A", "none") where the schema
+// says "or null". Convert those to real nulls so nothing renders as "null".
+const NULLISH = /^\s*(null|none|n\/a|na|nil|undefined|not applicable|-|—)\s*$/i;
+export function deepClean(x) {
+  if (typeof x === 'string') return NULLISH.test(x) ? null : x;
+  if (Array.isArray(x)) return x.map(deepClean);
+  if (x && typeof x === 'object') { for (const k of Object.keys(x)) x[k] = deepClean(x[k]); }
+  return x;
+}
+
 export const LAB_DISCIPLINES = ['fingerprints', 'dna', 'ballistics', 'toxicology', 'digital', 'trace', 'documents'];
 
 export function validateCase(c) {

@@ -2,7 +2,7 @@
 // redraws from app.state. Panels never touch the hidden truth beyond what the
 // player has legitimately discovered.
 
-import { h, clear, toast, modal, fmtMins } from './dom.js';
+import { h, clear, toast, modal, fmtMins, append } from './dom.js';
 import { getSuspect, getWitness, getEvidence, getLocation, getPerson, hasWarrantFor, labelLegal } from '../engine/state.js';
 import { LAB_DISCIPLINES } from '../engine/schema.js';
 import { LAB_TURNAROUND_MIN, formatDuration } from '../engine/clock.js';
@@ -16,45 +16,47 @@ export function registerPanels(app) {
   const reg = def => app.wm.register(def);
   const time = at => fmtMins(at, S().clock.startISO);
   const tag = (txt, cls = '') => h('span', { class: `tag ${cls}` }, txt);
+  const v = x => (x == null ? '' : x);
+  const join = (...parts) => parts.filter(x => x != null && x !== '').join(' · ');
   const readOnly = () => S().closed;
 
   // ------------------------------------------------------------ FIELD LOG
   reg({
-    id: 'fieldlog', title: 'Field Log', icon: '▤', size: { w: 640, h: 520 }, x: 16, y: 12,
+    id: 'fieldlog', sub: 'ACTIVITY LOG', title: 'Field Log', icon: '▤', size: { w: 640, h: 520 }, x: 16, y: 12,
     render(body) {
       body.classList.add('col');
       const wrap = h('div', { class: 'log-stream' });
       for (const e of S().log.slice(-80)) {
         const kind = e.kind === 'dispatch' || e.kind === 'hint' ? 'dispatch' : e.kind === 'legal' ? 'judge' : (e.speaker || '').split(':')[0] || (['system', 'evidence', 'lab', 'records', 'procedure'].includes(e.kind) ? (e.kind === 'procedure' ? 'procedure' : 'notice') : 'narrator');
         const who = e.speaker ? app.speakerLabel(e.speaker) : e.kind.toUpperCase();
-        wrap.append(h('div', { class: `entry ${kind}` }, h('div', { class: 'who' }, `${time(e.at)} · ${who}`), h('div', { class: 'narr' }, e.text)));
+        append(wrap, h('div', { class: `entry ${kind}` }, h('div', { class: 'who' }, `${time(e.at)} · ${who}`), h('div', { class: 'narr' }, e.text)));
       }
-      body.append(wrap);
+      append(body, wrap);
       wrap.scrollTop = wrap.scrollHeight;
     }
   });
 
   // ------------------------------------------------------------ CASE FILE
   reg({
-    id: 'casefile', title: 'Case File', icon: '▣', size: { w: 560, h: 520 }, x: 680, y: 12,
+    id: 'casefile', sub: 'CASE SYNOPSIS', title: 'Case File', icon: '▣', size: { w: 560, h: 520 }, x: 680, y: 12,
     render(body) {
       const c = t();
-      body.append(
+      append(body, 
         h('div', { class: 'card-head' }, h('span', { class: 'banner' }, `${c.caseNumber}`), h('span', { class: 'muted small' }, `${c.setting?.fieldOffice || ''} · ${c.setting?.city || ''}, ${c.setting?.state || ''}`)),
         h('h2', {}, c.title),
         h('dl', { class: 'kv' },
           h('dt', {}, 'Crime'), h('dd', {}, c.crimeType),
-          h('dt', {}, 'Date'), h('dd', {}, c.crime?.when || c.setting?.dateOfCrime || ''),
-          h('dt', {}, 'Victim'), h('dd', {}, `${c.victim.name}, ${c.victim.age}, ${c.victim.occupation}`),
+          h('dt', {}, 'Date'), h('dd', {}, v(c.crime?.when || c.setting?.dateOfCrime)),
+          h('dt', {}, 'Victim'), h('dd', {}, [c.victim.name, c.victim.age, c.victim.occupation].filter(x => x != null && x !== '').join(', ')),
           h('dt', {}, 'Deadline'), h('dd', {}, `${c.deadlineHours} hours from assignment`),
           h('dt', {}, 'Difficulty'), h('dd', {}, `${S().settings.difficulty} / ${S().settings.length}`)),
         h('h2', {}, 'Supervisor briefing'), h('p', { class: 'narr' }, c.supervisorBriefing),
         h('h2', {}, 'Initial report'), h('p', { class: 'narr' }, c.initialReport),
         h('h2', {}, 'Victim'), h('p', { class: 'narr' }, c.victim.description),
         h('h2', {}, 'Established timeline'),
-        h('ul', { class: 'timeline' }, (c.timeline || []).filter(x => x.knownInitially).map(x => h('li', {}, `${x.time}: ${x.event}`)), (c.timeline || []).some(x => x.knownInitially) ? null : h('li', { class: 'muted' }, 'Nothing firm yet.')),
+        h('ul', { class: 'timeline' }, (c.timeline || []).filter(x => x.knownInitially).map(x => h('li', {}, `${v(x.time)}: ${v(x.event)}`)), (c.timeline || []).some(x => x.knownInitially) ? null : h('li', { class: 'muted' }, 'Nothing firm yet.')),
         h('h2', {}, 'Statements on file'),
-        ...c.witnesses.filter(w => S().discovered.witnesses.includes(w.id)).map(w => h('div', { class: 'entry witness' }, h('div', { class: 'who' }, `${w.name} · ${w.role}`), h('div', { class: 'narr' }, w.initialStatement))),
+        ...c.witnesses.filter(w => S().discovered.witnesses.includes(w.id)).map(w => h('div', { class: 'entry witness' }, h('div', { class: 'who' }, join(w.name, w.role)), h('div', { class: 'narr' }, w.initialStatement))),
         h('h2', {}, 'Scene'), h('p', { class: 'narr' }, getLocation(S(), c.crime?.where)?.description || '')
       );
     }
@@ -62,7 +64,7 @@ export function registerPanels(app) {
 
   // ------------------------------------------------------------- EVIDENCE
   reg({
-    id: 'evidence', title: 'Evidence', icon: '◈', size: { w: 720, h: 500 }, x: 60, y: 60,
+    id: 'evidence', sub: 'FD-192 · EVIDENCE CONTROL', title: 'Evidence', icon: '◈', size: { w: 720, h: 500 }, x: 60, y: 60,
     render(body) {
       const s = S();
       const ids = s.discovered.evidence;
@@ -70,11 +72,11 @@ export function registerPanels(app) {
       const list = h('ul', { class: 'list' });
       for (const id of ids) {
         const e = getEvidence(s, id), es = s.evidence[id];
-        list.append(h('li', { class: `clickable ${app.selected.evidence === id ? 'sel' : ''}`, tabindex: '0', role: 'button', onClick: () => { app.selected.evidence = id; app.wm.refresh('evidence'); }, onKeydown: ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); app.selected.evidence = id; app.wm.refresh('evidence'); } } },
+        append(list, h('li', { class: `clickable ${app.selected.evidence === id ? 'sel' : ''}`, tabindex: '0', role: 'button', onClick: () => { app.selected.evidence = id; app.wm.refresh('evidence'); }, onKeydown: ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); app.selected.evidence = id; app.wm.refresh('evidence'); } } },
           h('div', {}, `${id.toUpperCase()} · ${e.name}`, es.excluded ? tag('inadmissible', 'bad') : null, es.labRequests.some(r => r.delivered) ? tag('lab', 'ok') : es.labRequests.length ? tag('lab pending', 'warn') : null),
-          h('div', { class: 'meta' }, `${e.type} · ${getLocation(s, e.locationId)?.name || ''} · ${es.foundAt == null ? '' : time(es.foundAt)}`)));
+          h('div', { class: 'meta' }, join(e.type, getLocation(s, e.locationId)?.name, es.foundAt == null ? null : time(es.foundAt)))));
       }
-      if (!ids.length) list.append(h('li', { class: 'muted' }, 'Locker is empty. Visit and search locations.'));
+      if (!ids.length) append(list, h('li', { class: 'muted' }, 'Locker is empty. Visit and search locations.'));
       const detail = h('div', { class: 'detail' });
       const id = app.selected.evidence;
       if (id) {
@@ -83,11 +85,11 @@ export function registerPanels(app) {
         const cmpSel = h('select', { 'aria-label': 'Compare with' }, others.map(x => h('option', { value: x }, `${x.toUpperCase()} ${getEvidence(s, x).name}`)));
         const labSel = h('select', { 'aria-label': 'Lab discipline' }, LAB_DISCIPLINES.filter(d => !es.labRequests.some(r => r.discipline === d)).map(d => h('option', { value: d }, `${d} (~${formatDuration(LAB_TURNAROUND_MIN[d])})`)));
         const words = h('input', { type: 'text', placeholder: 'Optional: what specifically do you look at?', 'aria-label': 'Examination focus' });
-        detail.append(
+        append(detail, 
           h('h2', {}, `${id.toUpperCase()} · ${e.name}`),
           es.excluded ? h('p', { class: 'danger small' }, `INADMISSIBLE: ${es.excludedReason}`) : null,
-          h('dl', { class: 'kv' }, h('dt', {}, 'Type'), h('dd', {}, e.type), h('dt', {}, 'Recovered'), h('dd', {}, `${getLocation(s, e.locationId)?.name || ''}${es.foundAt == null ? '' : ', ' + time(es.foundAt)}`), h('dt', {}, 'Examined'), h('dd', {}, `${es.examinedCount}×`)),
-          h('p', { class: 'narr' }, e.description),
+          h('dl', { class: 'kv' }, h('dt', {}, 'Type'), h('dd', {}, v(e.type)), h('dt', {}, 'Recovered'), h('dd', {}, `${getLocation(s, e.locationId)?.name || ''}${es.foundAt == null ? '' : ', ' + time(es.foundAt)}`), h('dt', {}, 'Examined'), h('dd', {}, `${es.examinedCount}×`)),
+          h('p', { class: 'narr' }, v(e.description)),
           h('div', { class: 'chip-row' }, words),
           readOnly() ? null : h('div', { class: 'chip-row' },
             h('button', { class: 'btn small', type: 'button', onClick: () => app.examine(id, words.value) }, 'Examine'),
@@ -100,13 +102,13 @@ export function registerPanels(app) {
           es.labRequests.length ? h('table', {}, h('tbody', {}, es.labRequests.map(r => h('tr', {}, h('th', {}, r.discipline), h('td', {}, r.delivered ? r.result : h('span', { class: 'warn' }, `pending · ETA ${time(r.readyAt)}`)))))) : h('p', { class: 'muted small' }, 'No analysis requested.')
         );
       }
-      body.append(h('div', { class: 'split' }, list, detail));
+      append(body, h('div', { class: 'split' }, list, detail));
     }
   });
 
   // -------------------------------------------------------------- PERSONS
   reg({
-    id: 'persons', title: 'Persons', icon: '☰', size: { w: 720, h: 520 }, x: 100, y: 80,
+    id: 'persons', sub: 'SUBJECT INDEX', title: 'Persons', icon: '☰', size: { w: 720, h: 520 }, x: 100, y: 80,
     render(body) {
       const s = S();
       const people = [...t().suspects.filter(x => s.discovered.suspects.includes(x.id)).map(x => ({ ...x, _kind: 'suspect' })), ...t().witnesses.filter(x => s.discovered.witnesses.includes(x.id)).map(x => ({ ...x, _kind: 'witness' }))];
@@ -114,7 +116,7 @@ export function registerPanels(app) {
       const list = h('ul', { class: 'list' });
       for (const p of people) {
         const ss = s.suspects[p.id];
-        list.append(h('li', { class: `clickable ${app.selected.person === p.id ? 'sel' : ''}`, tabindex: '0', role: 'button', onClick: () => { app.selected.person = p.id; app.wm.refresh('persons'); }, onKeydown: ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); app.selected.person = p.id; app.wm.refresh('persons'); } } },
+        append(list, h('li', { class: `clickable ${app.selected.person === p.id ? 'sel' : ''}`, tabindex: '0', role: 'button', onClick: () => { app.selected.person = p.id; app.wm.refresh('persons'); }, onKeydown: ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); app.selected.person = p.id; app.wm.refresh('persons'); } } },
           h('div', {}, p.name, tag(p._kind), ss ? tag(ss.alibiStatus, ss.alibiStatus === 'broken' ? 'bad' : ss.alibiStatus === 'confirmed' ? 'ok' : '') : null, ss?.lawyeredUp ? tag('counsel', 'warn') : null),
           h('div', { class: 'meta' }, `${p.occupation || p.role || ''}${ss ? ` · mood: ${ss.mood} · rapport ${ss.rapport >= 0 ? '+' : ''}${ss.rapport}` : ''}`)));
       }
@@ -124,12 +126,12 @@ export function registerPanels(app) {
         const ss = s.suspects[p.id];
         const recs = s.records.filter(r => r.suspectId === p.id);
         const transcript = (ss || s.witnesses[p.id])?.transcript || [];
-        detail.append(
+        append(detail, 
           h('h2', {}, p.name),
           h('dl', { class: 'kv' },
-            h('dt', {}, 'Role'), h('dd', {}, p._kind === 'suspect' ? `Person of interest · ${p.occupation}, ${p.age}` : `Witness · ${p.role}`),
+            h('dt', {}, 'Role'), h('dd', {}, p._kind === 'suspect' ? join('Person of interest', [p.occupation, p.age].filter(x => x != null && x !== '').join(', ')) : join('Witness', p.role)),
             p.relationshipToVictim ? h('dt', {}, 'Link to victim') : null, p.relationshipToVictim ? h('dd', {}, p.relationshipToVictim) : null,
-            ss ? h('dt', {}, 'Stated alibi') : null, ss ? h('dd', {}, `${p.alibi.claim} `, tag(ss.alibiStatus, ss.alibiStatus === 'broken' ? 'bad' : ss.alibiStatus === 'confirmed' ? 'ok' : '')) : null,
+            ss ? h('dt', {}, 'Stated alibi') : null, ss ? h('dd', {}, `${v(p.alibi?.claim)} `, tag(ss.alibiStatus, ss.alibiStatus === 'broken' ? 'bad' : ss.alibiStatus === 'confirmed' ? 'ok' : '')) : null,
             ss ? h('dt', {}, 'Demeanour') : null, ss ? h('dd', {}, `${ss.mood}; rapport ${ss.rapport}${ss.lawyeredUp ? '; has requested counsel' : ''}`) : null),
           p.background ? h('p', { class: 'narr' }, p.background) : null,
           p._kind === 'witness' ? h('div', { class: 'entry witness' }, h('div', { class: 'who' }, 'Statement on file'), h('div', { class: 'narr' }, p.initialStatement)) : null,
@@ -144,13 +146,13 @@ export function registerPanels(app) {
           ...transcript.map(x => h('div', {}, h('div', { class: 'entry agent' }, h('div', { class: 'who' }, `${time(x.at)} · SA ${s.agent.name}`), h('div', { class: 'narr' }, x.q)), h('div', { class: 'entry suspect' }, h('div', { class: 'who' }, p.name), h('div', { class: 'narr' }, x.a))))
         );
       }
-      body.append(h('div', { class: 'split' }, list, detail));
+      append(body, h('div', { class: 'split' }, list, detail));
     }
   });
 
   // ------------------------------------------------------------ INTERVIEW
   reg({
-    id: 'interview', title: 'Interview', icon: '◉', size: { w: 640, h: 540 }, x: 140, y: 40,
+    id: 'interview', sub: 'FD-302 · INTERVIEW', title: 'Interview', icon: '◉', size: { w: 640, h: 540 }, x: 140, y: 40,
     render(body) {
       const s = S();
       const people = [...t().suspects.filter(x => s.discovered.suspects.includes(x.id)), ...t().witnesses.filter(x => s.discovered.witnesses.includes(x.id))];
@@ -162,11 +164,11 @@ export function registerPanels(app) {
       const transcript = (ss || s.witnesses[app.interview.personId])?.transcript || [];
       const log = h('div', { class: 'log-stream' });
       if (p) {
-        log.append(h('div', { class: 'entry system' }, `${p.name}${ss ? ` · mood ${ss.mood} · rapport ${ss.rapport} · alibi ${ss.alibiStatus}` : ' · witness'}${ss?.lawyeredUp ? ' · HAS COUNSEL' : ''}`));
+        append(log, h('div', { class: 'entry system' }, `${p.name}${ss ? ` · mood ${ss.mood} · rapport ${ss.rapport} · alibi ${ss.alibiStatus}` : ' · witness'}${ss?.lawyeredUp ? ' · HAS COUNSEL' : ''}`));
         for (const x of transcript) {
-          log.append(h('div', { class: 'entry agent' }, h('div', { class: 'who' }, `${time(x.at)} · SA ${s.agent.name}`), h('div', { class: 'narr' }, x.q)), h('div', { class: 'entry suspect' }, h('div', { class: 'who' }, p.name.toUpperCase()), h('div', { class: 'narr' }, x.a)));
+          append(log, h('div', { class: 'entry agent' }, h('div', { class: 'who' }, `${time(x.at)} · SA ${s.agent.name}`), h('div', { class: 'narr' }, x.q)), h('div', { class: 'entry suspect' }, h('div', { class: 'who' }, p.name.toUpperCase()), h('div', { class: 'narr' }, x.a)));
         }
-        if (!transcript.length) log.append(h('div', { class: 'entry system' }, 'No questions asked yet. Build rapport before you press; ask about specifics.'));
+        if (!transcript.length) append(log, h('div', { class: 'entry system' }, 'No questions asked yet. Build rapport before you press; ask about specifics.'));
       }
       const q = h('textarea', { placeholder: 'Ask a question or make a statement. Enter to send, Shift+Enter for a new line.', rows: '2', 'aria-label': 'Your words' });
       q.addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
@@ -174,7 +176,7 @@ export function registerPanels(app) {
       const send = async () => { const txt = q.value; if (!txt.trim() || !p) return; q.value = ''; await app.ask(p.id, txt); };
       const present = async () => { if (!p || !evSel.value) return; const txt = q.value; q.value = ''; app.interview.presentId = null; await app.present(p.id, evSel.value, txt); };
       body.classList.add('col');
-      body.append(
+      append(body, 
         h('div', { class: 'row', style: 'margin:0 0 8px' }, who, custody),
         log,
         readOnly() ? null : h('div', { class: 'composer' }, q,
@@ -189,7 +191,7 @@ export function registerPanels(app) {
 
   // ------------------------------------------------------------ LOCATIONS
   reg({
-    id: 'locations', title: 'Locations', icon: '⌖', size: { w: 700, h: 480 }, x: 180, y: 60,
+    id: 'locations', sub: 'SCENES & PREMISES', title: 'Locations', icon: '⌖', size: { w: 700, h: 480 }, x: 180, y: 60,
     render(body) {
       const s = S();
       const ids = s.discovered.locations;
@@ -197,9 +199,9 @@ export function registerPanels(app) {
       const list = h('ul', { class: 'list' });
       for (const id of ids) {
         const l = getLocation(s, id);
-        list.append(h('li', { class: `clickable ${app.selected.location === id ? 'sel' : ''}`, tabindex: '0', role: 'button', onClick: () => { app.selected.location = id; app.wm.refresh('locations'); }, onKeydown: ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); app.selected.location = id; app.wm.refresh('locations'); } } },
+        append(list, h('li', { class: `clickable ${app.selected.location === id ? 'sel' : ''}`, tabindex: '0', role: 'button', onClick: () => { app.selected.location = id; app.wm.refresh('locations'); }, onKeydown: ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); app.selected.location = id; app.wm.refresh('locations'); } } },
           h('div', {}, l.name, s.currentLocation === id ? tag('here', 'ok') : null, l.isPrivate ? (hasWarrantFor(s, id) ? tag('warrant', 'ok') : tag('private', 'warn')) : null),
-          h('div', { class: 'meta' }, `${l.type} · ${l.address}`)));
+          h('div', { class: 'meta' }, join(l.type, l.address))));
       }
       const detail = h('div', { class: 'detail' });
       const id = app.selected.location;
@@ -208,10 +210,10 @@ export function registerPanels(app) {
         const notes = (s.locationNotes || {})[id] || [];
         const visited = notes.length > 0;
         const area = h('input', { type: 'text', placeholder: 'Where exactly? e.g. "the desk drawers", "the dumpster behind the building"', 'aria-label': 'Area to search' });
-        detail.append(
+        append(detail, 
           h('h2', {}, l.name),
-          h('p', { class: 'muted small' }, `${l.type} · ${l.address}${l.isPrivate ? ' · PRIVATE PROPERTY' + (hasWarrantFor(s, id) ? ' (warrant on file)' : ' (no warrant: a search needs consent, exigency or a warrant)') : ''}`),
-          visited ? h('p', { class: 'narr' }, l.description) : h('p', { class: 'muted' }, 'Not yet visited.'),
+          h('p', { class: 'muted small' }, `${join(l.type, l.address)}${l.isPrivate ? ' · PRIVATE PROPERTY' + (hasWarrantFor(s, id) ? ' (warrant on file)' : ' (no warrant: a search needs consent, exigency or a warrant)') : ''}`),
+          visited ? h('p', { class: 'narr' }, v(l.description)) : h('p', { class: 'muted' }, 'Not yet visited.'),
           readOnly() ? null : h('div', { class: 'chip-row' },
             h('button', { class: 'btn small', type: 'button', onClick: () => app.visit(id) }, s.currentLocation === id ? 'Look around' : 'Travel there'),
             h('button', { class: 'btn small ghost', type: 'button', onClick: () => app.canvass(id) }, 'Canvass'),
@@ -222,41 +224,41 @@ export function registerPanels(app) {
           ...notes.map(n => h('div', { class: 'entry narrator' }, h('div', { class: 'who' }, `${time(n.at)} · ${n.kind}${n.area ? ': ' + n.area : ''}`), h('div', { class: 'narr' }, n.text)))
         );
       }
-      body.append(h('div', { class: 'split' }, list, detail));
+      append(body, h('div', { class: 'split' }, list, detail));
     }
   });
 
   // ------------------------------------------------------------------ LAB
   reg({
-    id: 'lab', title: 'Lab', icon: '⚗', size: { w: 600, h: 420 }, x: 220, y: 100,
+    id: 'lab', sub: 'LABORATORY REQUESTS', title: 'Lab', icon: '⚗', size: { w: 600, h: 420 }, x: 220, y: 100,
     render(body) {
       const s = S();
       const rows = [];
       for (const [id, es] of Object.entries(s.evidence)) for (const r of es.labRequests) rows.push({ id, name: getEvidence(s, id).name, ...r });
       rows.sort((a, b) => a.readyAt - b.readyAt);
-      body.append(h('p', { class: 'muted small' }, 'Submit items from the Evidence Locker. Results arrive when the in-game clock passes the ETA. Disciplines: fingerprints, DNA, ballistics, toxicology, digital forensics, trace, questioned documents.'));
-      if (!rows.length) body.append(h('p', { class: 'muted' }, 'No requests in the queue.'));
-      else body.append(h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, 'Item'), h('th', {}, 'Analysis'), h('th', {}, 'Status'), h('th', {}, 'Result'))),
+      append(body, h('p', { class: 'muted small' }, 'Submit items from the Evidence Locker. Results arrive when the in-game clock passes the ETA. Disciplines: fingerprints, DNA, ballistics, toxicology, digital forensics, trace, questioned documents.'));
+      if (!rows.length) append(body, h('p', { class: 'muted' }, 'No requests in the queue.'));
+      else append(body, h('table', {}, h('thead', {}, h('tr', {}, h('th', {}, 'Item'), h('th', {}, 'Analysis'), h('th', {}, 'Status'), h('th', {}, 'Result'))),
         h('tbody', {}, rows.map(r => h('tr', {}, h('td', {}, `${r.id.toUpperCase()} ${r.name}`), h('td', {}, r.discipline), h('td', {}, r.delivered ? tag('returned', 'ok') : h('span', { class: 'warn' }, `ETA ${time(r.readyAt)}`)), h('td', { class: 'narr' }, r.delivered ? r.result : ''))))));
     }
   });
 
   // -------------------------------------------------------------- RECORDS
   reg({
-    id: 'records', title: 'Records', icon: '≡', size: { w: 600, h: 420 }, x: 240, y: 120,
+    id: 'records', sub: 'RECORDS CHECKS', title: 'Records', icon: '≡', size: { w: 600, h: 420 }, x: 240, y: 120,
     render(body) {
       const s = S();
-      body.append(h('p', { class: 'muted small' }, 'Criminal history and vehicle registrations are available on request from the Persons panel. Phone and financial records require a subpoena (Legal panel) and take time to return.'));
-      if (!s.records.length) body.append(h('p', { class: 'muted' }, 'No records pulled.'));
-      for (const r of [...s.records].reverse()) body.append(h('div', { class: 'entry notice' }, h('div', { class: 'who' }, `${time(r.at)} · ${getSuspect(s, r.suspectId)?.name} · ${r.kind}`), h('div', { class: 'narr' }, r.text)));
+      append(body, h('p', { class: 'muted small' }, 'Criminal history and vehicle registrations are available on request from the Persons panel. Phone and financial records require a subpoena (Legal panel) and take time to return.'));
+      if (!s.records.length) append(body, h('p', { class: 'muted' }, 'No records pulled.'));
+      for (const r of [...s.records].reverse()) append(body, h('div', { class: 'entry notice' }, h('div', { class: 'who' }, join(time(r.at), getSuspect(s, r.suspectId)?.name, r.kind)), h('div', { class: 'narr' }, r.text)));
       const pend = s.legal.filter(l => l.kind.startsWith('subpoena-') && l.status === 'granted' && !l.returned);
-      if (pend.length) body.append(h('h3', {}, 'Awaiting return'), h('ul', {}, pend.map(l => h('li', {}, `${labelLegal(l.kind)} · ${getSuspect(s, l.target)?.name} · ETA ${time(l.readyAt)}`))));
+      if (pend.length) append(body, h('h3', {}, 'Awaiting return'), h('ul', {}, pend.map(l => h('li', {}, `${labelLegal(l.kind)} · ${getSuspect(s, l.target)?.name} · ETA ${time(l.readyAt)}`))));
     }
   });
 
   // ---------------------------------------------------------------- LEGAL
   reg({
-    id: 'legal', title: 'Legal', icon: '§', size: { w: 640, h: 520 }, x: 200, y: 50,
+    id: 'legal', sub: 'AFFIDAVITS & PROCESS', title: 'Legal', icon: '§', size: { w: 640, h: 520 }, x: 200, y: 50,
     render(body) {
       const s = S();
       const pre = app.legalPrefill || {}; app.legalPrefill = null;
@@ -264,12 +266,12 @@ export function registerPanels(app) {
       const target = h('select', { 'aria-label': 'Target' });
       const fillTargets = () => {
         clear(target);
-        if (kind.value === 'search') for (const id of s.discovered.locations) target.append(h('option', { value: id, selected: id === pre.target }, getLocation(s, id).name));
-        else for (const id of s.discovered.suspects) target.append(h('option', { value: id, selected: id === pre.target }, getSuspect(s, id).name));
+        if (kind.value === 'search') for (const id of s.discovered.locations) append(target, h('option', { value: id, selected: id === pre.target }, getLocation(s, id).name));
+        else for (const id of s.discovered.suspects) append(target, h('option', { value: id, selected: id === pre.target }, getSuspect(s, id).name));
       };
       kind.addEventListener('change', fillTargets); fillTargets();
       const just = h('textarea', { rows: '6', placeholder: 'Affidavit: state the specific facts you have gathered that establish probable cause, what you expect to find, and where. Hunches are not probable cause.', 'aria-label': 'Justification' });
-      body.append(
+      append(body, 
         readOnly() ? null : h('form', { class: 'report-form', onSubmit: async e => { e.preventDefault(); const r = await app.fileLegal(kind.value, target.value, just.value); if (r) just.value = ''; } },
           h('label', {}, 'Application', kind), h('label', {}, 'Target', target), h('label', {}, 'Sworn justification', just),
           h('div', { class: 'row' }, h('button', { class: 'btn primary small', type: 'submit' }, 'Submit to magistrate / AUSA'), h('span', { class: 'muted small' }, 'Filing takes about 90 minutes of in-game time.'))),
@@ -281,16 +283,16 @@ export function registerPanels(app) {
 
   // ------------------------------------------------------------- DISPATCH
   reg({
-    id: 'dispatch', title: 'Dispatch', icon: '⌁', size: { w: 560, h: 460 }, x: 260, y: 80,
+    id: 'dispatch', sub: 'SECURE CHANNEL', title: 'Dispatch', icon: '⌁', size: { w: 560, h: 460 }, x: 260, y: 80,
     render(body) {
       const s = S();
       const log = h('div', { class: 'log-stream' });
-      for (const e of s.log.filter(x => x.kind === 'dispatch' || x.kind === 'hint').slice(-40)) log.append(h('div', { class: 'entry dispatch' }, h('div', { class: 'who' }, `${time(e.at)} · DISPATCH`), h('div', { class: 'narr' }, e.text)));
+      for (const e of s.log.filter(x => x.kind === 'dispatch' || x.kind === 'hint').slice(-40)) append(log, h('div', { class: 'entry dispatch' }, h('div', { class: 'who' }, `${time(e.at)} · DISPATCH`), h('div', { class: 'narr' }, e.text)));
       const q = h('input', { type: 'text', placeholder: 'Message your supervisor (procedure, resources, charges, time)...', 'aria-label': 'Message to dispatch' });
       const send = () => { const v = q.value.trim(); if (!v) return; q.value = ''; app.dispatch(v); };
       q.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); send(); } });
       body.classList.add('col');
-      body.append(h('p', { class: 'muted small' }, `Encrypted channel to your SSA. Hints taken so far: ${s.hints}. Each hint costs score.`), log,
+      append(body, h('p', { class: 'muted small' }, `Encrypted channel to your SSA. Hints taken so far: ${s.hints}. Each hint costs score.`), log,
         readOnly() ? null : h('div', { class: 'row composer' }, q, h('button', { class: 'btn small primary', type: 'button', onClick: send }, 'Send'), h('button', { class: 'btn small ghost', type: 'button', onClick: () => app.hint(q.value.trim()) }, 'Request hint')));
       log.scrollTop = log.scrollHeight;
     }
@@ -298,12 +300,12 @@ export function registerPanels(app) {
 
   // ------------------------------------------------------------- NOTEBOOK
   reg({
-    id: 'notebook', title: 'Notebook', icon: '✎', size: { w: 560, h: 480 }, x: 280, y: 60,
+    id: 'notebook', sub: 'AGENT NOTES', title: 'Notebook', icon: '✎', size: { w: 560, h: 480 }, x: 280, y: 60,
     render(body) {
       const s = S();
       const ta = h('textarea', { class: 'notebook-text', 'aria-label': 'Your notes', placeholder: 'Your own notes. Saved automatically.' }, s.notes || '');
       let timer; ta.addEventListener('input', () => { s.notes = ta.value; clearTimeout(timer); timer = setTimeout(() => app.autosave(), 500); });
-      body.append(h('h3', {}, `Facts established (${s.facts.length})`),
+      append(body, h('h3', {}, `Facts established (${s.facts.length})`),
         s.facts.length ? h('ul', { class: 'small' }, s.facts.map(f => h('li', {}, h('span', { class: 'faint' }, `${time(f.at)} `), f.text))) : h('p', { class: 'muted small' }, 'Facts the GM confirms are logged here automatically.'),
         h('h3', {}, 'Procedure log'),
         s.procedureErrors.length ? h('ul', { class: 'small danger' }, s.procedureErrors.map(p => h('li', {}, `${time(p.at)} ${p.text}`))) : h('p', { class: 'muted small' }, 'Clean so far.'),
@@ -313,7 +315,7 @@ export function registerPanels(app) {
 
   // ----------------------------------------------------------- CASE BOARD
   reg({
-    id: 'board', title: 'Case Board', icon: '⊞', size: { w: 760, h: 520 }, x: 120, y: 40,
+    id: 'board', sub: 'LINK ANALYSIS', title: 'Case Board', icon: '⊞', size: { w: 760, h: 520 }, x: 120, y: 40,
     render(body) {
       const s = S();
       const nodes = [
@@ -326,7 +328,7 @@ export function registerPanels(app) {
       const els = new Map();
       for (const n of nodes) {
         const el = h('div', { class: `node ${sel === n.id ? 'sel' : ''}`, tabindex: '0', role: 'button', dataset: { id: n.id }, onClick: () => pick(n.id), onKeydown: e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(n.id); } } }, n.label);
-        els.set(n.id, el); cols[n.col].append(el);
+        els.set(n.id, el); append(cols[n.col], el);
       }
       const pick = async id => {
         if (readOnly()) return;
@@ -342,7 +344,7 @@ export function registerPanels(app) {
       };
       const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
       const wrap = h('div', { class: 'board' }, svg, h('div', { class: 'cols' }, cols));
-      body.append(h('p', { class: 'muted small' }, 'Click one card, then another, to link them (click a linked pair again to unlink). Links are yours; the GM does not see them.'), wrap,
+      append(body, h('p', { class: 'muted small' }, 'Click one card, then another, to link them (click a linked pair again to unlink). Links are yours; the GM does not see them.'), wrap,
         s.board.links.length ? h('ul', { class: 'small' }, s.board.links.map(l => h('li', {}, `${nodes.find(n => n.id === l.from)?.label || l.from} — ${l.label || 'linked'} — ${nodes.find(n => n.id === l.to)?.label || l.to}`))) : null);
       requestAnimationFrame(() => {
         const r0 = wrap.getBoundingClientRect();
@@ -354,7 +356,7 @@ export function registerPanels(app) {
           line.setAttribute('x1', ra.left + ra.width / 2 - r0.left); line.setAttribute('y1', ra.top + ra.height / 2 - r0.top);
           line.setAttribute('x2', rb.left + rb.width / 2 - r0.left); line.setAttribute('y2', rb.top + rb.height / 2 - r0.top);
           line.setAttribute('stroke', 'currentColor'); line.setAttribute('stroke-width', '1.5'); line.setAttribute('opacity', '0.6');
-          svg.append(line);
+          append(svg, line);
         }
       });
     }
@@ -362,10 +364,10 @@ export function registerPanels(app) {
 
   // ------------------------------------------------------------ CLOSE CASE
   reg({
-    id: 'close', title: 'Close Case', icon: '⚑', size: { w: 640, h: 580 }, x: 160, y: 30,
+    id: 'close', sub: 'PROSECUTIVE REPORT', title: 'Close Case', icon: '⚑', size: { w: 640, h: 580 }, x: 160, y: 30,
     render(body) {
       const s = S();
-      if (s.closed) { body.append(h('p', {}, 'This case is closed.'), h('button', { class: 'btn small', type: 'button', onClick: () => app.showDebrief(s.grade) }, 'View debrief')); return; }
+      if (s.closed) { append(body, h('p', {}, 'This case is closed.'), h('button', { class: 'btn small', type: 'button', onClick: () => app.showDebrief(s.grade) }, 'View debrief')); return; }
       const culprit = h('select', { 'aria-label': 'Culprit' }, s.discovered.suspects.map(id => h('option', { value: id }, getSuspect(s, id).name)));
       const motive = h('textarea', { rows: '2', placeholder: 'Why did they do it?' });
       const means = h('textarea', { rows: '2', placeholder: 'How was it done? Weapon, method, access.' });
@@ -373,7 +375,7 @@ export function registerPanels(app) {
       const charges = h('input', { type: 'text', placeholder: 'e.g. 18 U.S.C. § 1111 murder; § 1512 witness tampering' });
       const narrative = h('textarea', { rows: '4', placeholder: 'Your theory of the case in a paragraph.' });
       const evBoxes = s.discovered.evidence.map(id => h('label', { class: 'check small' }, h('input', { type: 'checkbox', value: id }), `${id.toUpperCase()} ${getEvidence(s, id).name}${s.evidence[id].excluded ? ' (inadmissible)' : ''}`));
-      body.append(h('p', { class: 'banner' }, 'CLOSING REPORT · FD-CR'),
+      append(body, h('p', { class: 'banner' }, 'CLOSING REPORT · FD-CR'),
         h('p', { class: 'muted small' }, 'Name the responsible party, state motive, means and opportunity, select the evidence that proves each, and list charges. The AUSA grades what you actually collected, not what you believe.'),
         h('form', { class: 'report-form', onSubmit: e => {
           e.preventDefault();
@@ -391,13 +393,13 @@ export function registerPanels(app) {
 
   // ------------------------------------------------------------- SETTINGS
   reg({
-    id: 'settings', title: 'Settings', icon: '⚙', size: { w: 560, h: 520 }, x: 300, y: 60,
+    id: 'settings', sub: 'SYSTEM', title: 'Settings', icon: '⚙', size: { w: 560, h: 520 }, x: 300, y: 60,
     render(body) {
       const st = app.settings; const s = S();
       const opt = (label, el) => h('label', {}, label, el);
       const sel = (val, opts, on) => h('select', { onChange: e => { on(e.target.value); app.applySettings(); app.wm.refresh('settings'); } }, opts.map(([v, l]) => h('option', { value: v, selected: String(val) === v }, l)));
       const chk = (val, on) => h('input', { type: 'checkbox', checked: val, onChange: e => { on(e.target.checked); app.applySettings(); } });
-      body.append(h('h3', {}, 'Display'),
+      append(body, h('h3', {}, 'Display'),
         opt('Theme', sel(st.theme || 'green', [['green', 'Phosphor green'], ['amber', 'Amber'], ['blue', 'Cold blue']], v => { st.theme = v; })),
         opt('Typewriter speed', sel(st.typeSpeed || 'normal', [['off', 'Instant'], ['fast', 'Fast'], ['normal', 'Normal'], ['slow', 'Slow']], v => { st.typeSpeed = v; })),
         h('label', { class: 'check' }, chk(!!st.reduceMotion, v => { st.reduceMotion = v; }), 'Reduce motion (no scanlines, no blinking, instant text)'),
@@ -420,9 +422,9 @@ export function registerPanels(app) {
 
   // ----------------------------------------------------------------- HELP
   reg({
-    id: 'help', title: 'Help', icon: '?', size: { w: 600, h: 520 }, x: 320, y: 40,
+    id: 'help', sub: 'MANUAL', title: 'Help', icon: '?', size: { w: 600, h: 520 }, x: 320, y: 40,
     render(body) {
-      body.append(h('h3', {}, 'How to work a case'),
+      append(body, h('h3', {}, 'How to work a case'),
         h('ol', { class: 'small' },
           h('li', {}, 'Read the Case File: briefing, initial report, statements.'),
           h('li', {}, 'Visit the scene. Search specific places. Canvass.'),

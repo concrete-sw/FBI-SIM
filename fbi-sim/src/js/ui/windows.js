@@ -51,7 +51,7 @@ export class WindowManager {
     const el = h('section', { class: 'win', role: 'dialog', 'aria-label': def.title, dataset: { win: id } },
       h('header', { class: 'win-head' },
         h('span', { class: 'ico', 'aria-hidden': 'true' }, def.icon),
-        h('span', { class: 'win-title' }, def.title),
+        h('span', { class: 'win-title' }, def.title, def.sub ? h('span', { class: 'win-sub' }, def.sub) : null),
         h('button', { type: 'button', title: 'Close', 'aria-label': `Close ${def.title}`, onClick: () => this.close(id) }, '✕')),
       body,
       h('div', { class: 'win-resize', 'aria-hidden': 'true' }));

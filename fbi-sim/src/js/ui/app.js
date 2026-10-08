@@ -1,6 +1,6 @@
 // Main controller: screens, API config, actions, command bar, save/load.
 
-import { $, $$, h, clear, toast, modal } from './dom.js';
+import { $, $$, h, clear, toast, modal, esc, append } from './dom.js';
 import { Typewriter } from './typewriter.js';
 import { WindowManager } from './windows.js';
 import { runBoot } from './boot.js';
@@ -11,7 +11,7 @@ import { runTurn } from '../engine/gm.js';
 import { gradeCase } from '../engine/grader.js';
 import { newGameState, requestLab, pullRecord, processDue, remainingMinutes, getSuspect, getWitness, getEvidence, getLocation, getPerson, addLog, addFact, labelLegal } from '../engine/state.js';
 import { formatClock, formatDuration } from '../engine/clock.js';
-import { LAB_DISCIPLINES } from '../engine/schema.js';
+import { LAB_DISCIPLINES, deepClean } from '../engine/schema.js';
 import * as store from '../engine/storage.js';
 
 const SPEED = { off: 0, fast: 4, normal: 12, slow: 28 };
@@ -32,6 +32,8 @@ export class App {
   // ---------------------------------------------------------------- startup
   async init() {
     this.applySettings();
+    this.setBanner('unclass', 'UNCLASSIFIED//TRAINING SIMULATION//FICTION');
+    $('#wmInsignia').innerHTML = $('#insigniaLogin').innerHTML;
     this.setupLogin();
     this.setupNewCase();
     this.setupDesktop();
@@ -43,6 +45,24 @@ export class App {
   showScreen(name) {
     for (const s of $$('.screen')) s.classList.add('hidden');
     $(`#screen-${name}`).classList.remove('hidden');
+    if (name === 'login' || name === 'newcase' || name === 'boot') this.setBanner('unclass', 'UNCLASSIFIED//TRAINING SIMULATION//FICTION');
+    else if (this.state) this.setCaseBanner();
+  }
+
+  /** Full-width classification bars, top and bottom, in the style of government document banners. */
+  setBanner(level, text) {
+    for (const id of ['#bannerTop', '#bannerBottom']) { const el = $(id); el.className = `classbar lvl-${level}`; el.textContent = text; }
+  }
+
+  setCaseBanner() {
+    const t = this.state.truth;
+    const crime = (t.crimeType || '').toLowerCase();
+    const secret = /terror|corruption|racketeer|organized|cyber|intrusion|espionage|counterintel/.test(crime);
+    const level = secret ? 'secret' : 'cui';
+    const marking = secret ? 'SECRET//NOFORN' : 'CUI//LES';
+    let op = (t.title || 'UNTITLED').toUpperCase();
+    if (!/^OPERATION\b/.test(op)) op = `OPERATION ${op}`;
+    this.setBanner(level, `${marking}//${op}//${this.state.closed ? 'CASE CLOSED' : 'ACTIVE INVESTIGATION'}//TRAINING SIMULATION`);
   }
 
   applySettings() {
@@ -74,7 +94,7 @@ export class App {
       const p = getProvider(sel.value);
       $('#modelInput').placeholder = p.defaultModel || 'model id';
       const dl = clear($('#modelList'));
-      for (const m of p.models) dl.append(h('option', { value: m }));
+      for (const m of p.models) append(dl, h('option', { value: m }));
       $('#baseUrlRow').classList.toggle('hidden', !p.allowCustomBaseUrl);
       $('#baseUrl').placeholder = p.defaultBaseUrl;
       $('#providerNotes').innerHTML = `${p.notes ? p.notes + ' ' : ''}${p.keyUrl ? `Get a key: <a href="${p.keyUrl}" target="_blank" rel="noopener">${p.keyUrl}</a>` : ''}`;
@@ -134,8 +154,8 @@ export class App {
     const ul = clear($('#slotList'));
     for (const s of store.listSlots()) {
       const label = s.slot === 0 ? 'Autosave' : `Slot ${s.slot}`;
-      if (s.empty) { ul.append(h('li', {}, h('span', { class: 'slot-info muted' }, h('b', {}, label), 'empty'))); continue; }
-      ul.append(h('li', {},
+      if (s.empty) { append(ul, h('li', {}, h('span', { class: 'slot-info muted' }, h('b', {}, label), 'empty'))); continue; }
+      append(ul, h('li', {},
         h('span', { class: 'slot-info' }, h('b', {}, `${label}: ${s.caseNumber || ''} ${s.title || ''}`), `SA ${s.agent} · ${formatDuration(s.elapsed || 0)} elapsed${s.closed ? ' · CLOSED' : ''} · saved ${new Date(s.savedAt).toLocaleString()}`),
         h('span', { class: 'row' },
           h('button', { class: 'btn small', type: 'button', onClick: () => { this.loadState(store.loadSlot(s.slot), s.slot); } }, 'Resume'),
@@ -164,6 +184,7 @@ export class App {
   }
 
   loadState(state, slot) {
+    deepClean(state.truth);
     this.state = state;
     this.slot = slot || 0;
     this.agent = state.agent;
@@ -173,6 +194,7 @@ export class App {
 
   autosave() {
     if (!this.state) return;
+    this.lastSave = Date.now();
     store.saveSlot(0, this.state);
     if (this.slot) store.saveSlot(this.slot, this.state);
   }
@@ -194,6 +216,7 @@ export class App {
   enterDesktop(fresh) {
     this.wm.closeAll();
     this.showScreen('desktop');
+    this.setCaseBanner();
     this.updateTopbar();
     this.wm.show('fieldlog');
     if (fresh) { this.wm.show('casefile'); this.wm.focus('fieldlog'); }
@@ -212,6 +235,10 @@ export class App {
     dl.textContent = rem >= 0 ? `DEADLINE IN ${formatDuration(rem)}` : `OVER DEADLINE BY ${formatDuration(-rem)}`;
     dl.className = `mono deadline ${rem < 0 ? 'danger' : rem < 12 * 60 ? 'warn' : ''}`;
     $('#topAgent').textContent = `SA ${s.agent.name} · ${s.agent.badge}`;
+    const office = s.truth.setting?.fieldOffice || 'Field Office';
+    $('#wmText').innerHTML = `<div class="wm-name">SA ${esc(s.agent.name.toUpperCase())}</div><div class="wm-badge">BADGE ${esc(s.agent.badge)}</div><div class="wm-office">${esc(office.toUpperCase())}</div><div class="wm-case">${esc(s.truth.caseNumber)}</div>`;
+    const saved = this.lastSave ? new Date(this.lastSave).toLocaleTimeString() : 'never';
+    $('#statusBar').textContent = `SECURE SESSION · TLS 1.3 · USER ${s.agent.name.toUpperCase()} (${s.agent.badge}) · ${office.toUpperCase()} · GM LINK ${this.provider.name.toUpperCase()} · TURN ${s.turnCount} · LAST SAVE ${saved}`;
   }
 
   setStatus(text, busy = false) {
@@ -227,12 +254,13 @@ export class App {
     if (this.busy) { toast('Wait for the current transmission to finish.', 'warn'); return null; }
     this.busy = true;
     this.abort = new AbortController();
+    const prevFocused = [...this.wm.open.entries()].find(([, w]) => w.el.classList.contains('focused'))?.[0] || null;
     const target = this.liveTarget(action);
     const agentLine = this.agentLineFor(action);
     const liveWrap = h('div', { class: 'entry live' }, h('div', { class: 'who' }, 'GM'), h('div', { class: 'stream' }));
     if (target) {
-      if (agentLine) target.append(h('div', { class: 'entry agent' }, h('div', { class: 'who' }, `SA ${this.state.agent.name}`), h('div', { class: 'narr' }, agentLine)));
-      target.append(liveWrap);
+      if (agentLine) append(target, h('div', { class: 'entry agent' }, h('div', { class: 'who' }, `SA ${this.state.agent.name}`), h('div', { class: 'narr' }, agentLine)));
+      append(target, liveWrap);
       liveWrap.scrollIntoView({ block: 'end' });
     }
     const tw = new Typewriter(liveWrap.querySelector('.stream'), { speedMs: SPEED[this.settings.typeSpeed ?? 'normal'] ?? 12, reduceMotion: this.settings.reduceMotion });
@@ -259,6 +287,8 @@ export class App {
       this.updateTopbar();
       this.autosave();
       this.wm.refreshAll();
+      // Bring the panel the agent was working in back to the front, now that the narrative has finished.
+      if (prevFocused && prevFocused !== 'fieldlog' && this.wm.open.has(prevFocused)) this.wm.focus(prevFocused);
       this.checkDeadline();
     }
     return result;
@@ -449,6 +479,7 @@ export class App {
       this.state.closed = true; this.state.report = report; this.state.grade = grade;
       addLog(this.state, 'system', `Case closed. Arrested ${culprit.name}. Rating: ${grade.rating} (${grade.score}).`);
       this.autosave();
+      this.setCaseBanner();
       this.showDebrief(grade);
     } catch (err) { toast(`Closing failed: ${err.message}`, 'danger', 8000); }
     finally { this.busy = false; this.abort = null; this.setStatus(''); }
@@ -460,7 +491,7 @@ export class App {
     const body = clear($('#debriefBody'));
     const scoreClass = grade.score >= 75 ? '' : grade.score >= 45 ? 'mid' : 'bad';
     const li = arr => h('ul', {}, (arr || []).map(x => h('li', {}, typeof x === 'string' ? x : JSON.stringify(x))));
-    body.append(
+    append(body, 
       h('div', { class: 'card-head' }, h('span', { class: 'banner' }, 'CASE CLOSED · DEBRIEF · TRUTH UNSEALED'), h('span', { class: 'muted' }, `${t.caseNumber} · ${t.title}`)),
       h('div', { class: `score ${scoreClass}` }, `${grade.score} / 100`),
       h('h1', {}, grade.rating),
@@ -468,8 +499,8 @@ export class App {
       h('h2', {}, 'Supervisor'), h('p', { class: 'narr' }, grade.verdict || ''),
       h('h2', {}, 'What actually happened'), h('p', { class: 'narr' }, grade.whatHappened || ''),
       h('div', { class: 'kv' },
-        h('dt', {}, 'Culprit'), h('dd', {}, `${culprit?.name} (${culprit?.occupation})`),
-        h('dt', {}, 'Motive'), h('dd', {}, t.culprit.motive), h('dt', {}, 'Means'), h('dd', {}, t.culprit.means), h('dt', {}, 'Opportunity'), h('dd', {}, t.culprit.opportunity),
+        h('dt', {}, 'Culprit'), h('dd', {}, `${culprit?.name || ''}${culprit?.occupation ? ` (${culprit.occupation})` : ''}`),
+        h('dt', {}, 'Motive'), h('dd', {}, t.culprit.motive || ''), h('dt', {}, 'Means'), h('dd', {}, t.culprit.means || ''), h('dt', {}, 'Opportunity'), h('dd', {}, t.culprit.opportunity || ''),
         h('dt', {}, 'Charges'), h('dd', {}, (t.charges || []).join('; '))),
       h('h2', {}, 'Your report, element by element'),
       h('table', {}, h('tbody', {}, ['motive', 'means', 'opportunity'].map(k => h('tr', {}, h('th', {}, k), h('td', {}, grade.elements?.[k]?.backed ? h('span', { class: 'tag ok' }, 'backed') : h('span', { class: 'tag bad' }, 'not backed')), h('td', {}, grade.elements?.[k]?.note || ''))),
@@ -486,7 +517,7 @@ export class App {
         'Hints taken': grade.stats?.hints ?? 0, 'Procedure errors': grade.stats?.procedureErrors?.length ?? 0,
         'Time used': `${grade.stats?.hoursUsed ?? '?'}h of ${grade.stats?.deadlineHours ?? '?'}h`
       }).map(([k, v]) => h('tr', {}, h('th', {}, k), h('td', {}, String(v)))))),
-      h('details', {}, h('summary', { class: 'muted' }, 'Full hidden timeline'), h('ul', { class: 'timeline' }, (t.timeline || []).map(x => h('li', {}, `${x.time}: ${x.event}`)))),
+      h('details', {}, h('summary', { class: 'muted' }, 'Full hidden timeline'), h('ul', { class: 'timeline' }, (t.timeline || []).map(x => h('li', {}, `${x.time || ''}: ${x.event || ''}`)))),
       h('div', { class: 'row' },
         h('button', { class: 'btn primary', type: 'button', onClick: () => { this.renderSlots(); this.showScreen('newcase'); } }, 'New assignment'),
         h('button', { class: 'btn ghost', type: 'button', onClick: () => store.exportState(s) }, 'Export case file'),

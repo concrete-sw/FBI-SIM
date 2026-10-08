@@ -11,6 +11,8 @@
 <body data-theme="green">
 <a class="skip" href="#cmdInput">Skip to command bar</a>
 <div id="scanlines" aria-hidden="true"></div>
+<div id="bannerTop" class="classbar lvl-unclass" role="banner">UNCLASSIFIED//TRAINING SIMULATION//FICTION</div>
+<div id="bannerBottom" class="classbar lvl-unclass" aria-hidden="true">UNCLASSIFIED//TRAINING SIMULATION//FICTION</div>
 
 <!-- BOOT -->
 <section id="screen-boot" class="screen" aria-label="Boot sequence">
@@ -37,8 +39,13 @@
   <line x1="72" y1="136" x2="128" y2="136" stroke="currentColor" stroke-width="1" opacity=".6"/>
   <circle cx="100" cy="100" r="2" fill="currentColor"/>
 </svg></div>
-    <h1 class="title">FEDERAL INVESTIGATIVE SIMULATION</h1>
-    <p class="banner">CLASSIFICATION: TRAINING // FICTION // NOT FOR OPERATIONAL USE</p>
+    <p class="dept">U.S. DEPARTMENT OF JUSTICE</p>
+    <h1 class="title">FEDERAL BUREAU OF INVESTIGATION</h1>
+    <p class="subtitle">CASE MANAGEMENT WORKSTATION · FIS-OS 7.4 · AUTHORIZED PERSONNEL ONLY</p>
+    <div class="consent">
+      <b>WARNING</b> — This is a simulated system for training and entertainment. All cases, persons, places and companies are fictitious.
+      Nothing here is an official system of, or affiliated with, any real agency. By proceeding you acknowledge that the Game Master is an AI model operating under your own API key.
+    </div>
     <form id="loginForm" autocomplete="off">
       <label>Agent name
         <input id="agentName" type="text" maxlength="40" placeholder="e.g. Dana Reyes" required>
@@ -73,7 +80,7 @@
         <button class="btn primary" type="submit">Authenticate ▸</button>
       </div>
     </form>
-    <p class="muted small fiction">This is a work of fiction. The Bureau, the cases, the people and the places are invented. Nothing here is affiliated with any real agency. The insignia is an original design.</p>
+    <p class="muted small fiction">Work of fiction. The insignia is an original design and is not the seal of any agency.</p>
   </div>
 </section>
 
@@ -136,7 +143,7 @@
 <!-- DESKTOP -->
 <section id="screen-desktop" class="screen hidden" aria-label="Workstation">
   <header class="topbar">
-    <span class="banner" id="topBanner">TRAINING // FICTION</span>
+    <span class="sys">FBI · CMW</span>
     <span id="topCase" class="mono"></span>
     <span id="topClock" class="mono clock" aria-live="off"></span>
     <span id="topDeadline" class="mono deadline"></span>
@@ -144,7 +151,13 @@
     <span id="topStatus" class="status" role="status" aria-live="polite"></span>
   </header>
   <nav class="dock" id="dock" aria-label="Panels"></nav>
-  <main id="windowArea" class="window-area"></main>
+  <main id="windowArea" class="window-area">
+    <div id="watermark" class="watermark" aria-hidden="true">
+      <div class="wm-insignia" id="wmInsignia"></div>
+      <div class="wm-text" id="wmText"></div>
+    </div>
+  </main>
+  <div id="statusBar" class="statusbar" aria-hidden="true"></div>
   <form id="cmdBar" class="cmdbar" autocomplete="off">
     <label for="cmdInput" class="prompt">AGENT&gt;</label>
     <input id="cmdInput" type="text" placeholder="type a command, or use the panels. 'help' lists commands." spellcheck="false">

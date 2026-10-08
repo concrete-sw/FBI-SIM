@@ -1,7 +1,7 @@
 // Generates and validates the hidden case truth.
 
 import { buildCaseGenerationPrompt } from '../prompts/caseGeneration.js';
-import { validateCase } from './schema.js';
+import { validateCase, deepClean } from './schema.js';
 import { extractJSON } from './json.js';
 import { complete } from '../providers/index.js';
 
@@ -22,7 +22,7 @@ export async function generateCase({ provider, apiKey, model, baseUrl, settings,
         system: 'You are a meticulous crime-fiction case designer who outputs only valid JSON.',
         messages
       }, (chunk, text) => { chars = text.length; onProgress?.(`Generating case file (attempt ${attempt})... ${chars} chars`, chars); });
-      const parsed = extractJSON(lastText);
+      const parsed = deepClean(extractJSON(lastText));
       lastProblems = validateCase(parsed);
       if (lastProblems.length === 0) {
         normalizeCase(parsed, settings);
