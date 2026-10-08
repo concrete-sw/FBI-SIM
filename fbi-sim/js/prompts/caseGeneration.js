@@ -15,7 +15,7 @@ export const CASE_SCHEMA_TEXT = `{
   "timeline": [ { "time": "YYYY-MM-DD HH:MM", "event": "what happened", "involves": ["suspectId or witnessId"], "knownInitially": false } ],
   "suspects": [
     {
-      "id": "s1", "name": "", "age": 0, "occupation": "", "background": "a paragraph",
+      "id": "s1", "name": "", "age": 0, "occupation": "", "background": "a paragraph of what a records check and a few phone calls would establish: job, family, reputation, known troubles. This is shown to the player; put anything hidden in secret or alibi.whatActuallyHappened",
       "personality": "a sentence", "speechStyle": "how they talk: vocabulary, rhythm, tics, education, region",
       "relationshipToVictim": "", "secret": "an unrelated personal secret they will hide (affair, debt, minor crime, shame)",
       "alibi": { "claim": "what they say they were doing", "isTrue": true, "whatActuallyHappened": "the truth of their whereabouts" },

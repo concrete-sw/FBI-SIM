@@ -19,9 +19,10 @@ export const loadApiConfig = () => read(KEY_API, { providerId: 'anthropic', apiK
 export const saveApiConfig = c => write(KEY_API, c);
 export const forgetApiKey = () => { const c = loadApiConfig(); c.apiKey = ''; c.remember = false; write(KEY_API, c); };
 
+// Slot 0 is the autosave slot; slots 1..SLOT_COUNT are manual.
 export function listSlots() {
   const out = [];
-  for (let i = 1; i <= SLOT_COUNT; i++) {
+  for (let i = 0; i <= SLOT_COUNT; i++) {
     const s = read(KEY_SLOT(i), null);
     out.push(s ? { slot: i, savedAt: s.savedAt, title: s.state?.truth?.title, caseNumber: s.state?.truth?.caseNumber, agent: s.state?.agent?.name, elapsed: s.state?.clock?.elapsedMinutes, closed: s.state?.closed } : { slot: i, empty: true });
   }
