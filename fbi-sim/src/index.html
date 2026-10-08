@@ -3,16 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>FBI-SIM · Secure Workstation</title>
-<meta name="description" content="A fictional, AI-run FBI investigation simulation that runs in your browser with your own API key.">
+<title>FBI · Case Management Workstation</title>
+<meta name="description" content="FBI Case Management Workstation. An AI-run investigation game that runs in your browser with your own API key.">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23070a08'/%3E%3Cpath d='M16 5l9 3v9c0 7-4 11-9 14-5-3-9-7-9-14V8z' fill='none' stroke='%2366ff99' stroke-width='2'/%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body data-theme="green">
 <a class="skip" href="#cmdInput">Skip to command bar</a>
 <div id="scanlines" aria-hidden="true"></div>
-<div id="bannerTop" class="classbar lvl-unclass" role="banner">UNCLASSIFIED//TRAINING SIMULATION//FICTION</div>
-<div id="bannerBottom" class="classbar lvl-unclass" aria-hidden="true">UNCLASSIFIED//TRAINING SIMULATION//FICTION</div>
+<div id="bannerTop" class="classbar lvl-unclass" role="banner">UNCLASSIFIED//FOR OFFICIAL USE ONLY</div>
+<div id="bannerBottom" class="classbar lvl-unclass" aria-hidden="true">UNCLASSIFIED//FOR OFFICIAL USE ONLY</div>
 
 <!-- BOOT -->
 <section id="screen-boot" class="screen" aria-label="Boot sequence">
@@ -23,14 +23,14 @@
 <!-- LOGIN -->
 <section id="screen-login" class="screen hidden" aria-label="Login">
   <div class="login-card">
-    <div class="insignia" id="insigniaLogin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Fictional Bureau insignia">
+    <div class="insignia" id="insigniaLogin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Bureau insignia">
   <defs>
     <path id="ring" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/>
   </defs>
   <circle cx="100" cy="100" r="96" fill="none" stroke="currentColor" stroke-width="2"/>
   <circle cx="100" cy="100" r="88" fill="none" stroke="currentColor" stroke-width="1" opacity=".6"/>
   <text font-family="ui-monospace, monospace" font-size="11" letter-spacing="2.5" fill="currentColor">
-    <textPath href="#ring" startOffset="2%">FEDERAL INVESTIGATIVE SIMULATION · TRAINING DIVISION · FICTION</textPath>
+    <textPath href="#ring" startOffset="2%">FEDERAL BUREAU OF INVESTIGATION · U.S. DEPARTMENT OF JUSTICE · </textPath>
   </text>
   <path d="M100,46 l34,12 v34 c0,26 -16,42 -34,52 c-18,-10 -34,-26 -34,-52 v-34 z" fill="none" stroke="currentColor" stroke-width="2.5"/>
   <path d="M100,56 l25,9 v27 c0,20 -12,32 -25,40 c-13,-8 -25,-20 -25,-40 v-27 z" fill="none" stroke="currentColor" stroke-width="1" opacity=".5"/>
@@ -41,10 +41,10 @@
 </svg></div>
     <p class="dept">U.S. DEPARTMENT OF JUSTICE</p>
     <h1 class="title">FEDERAL BUREAU OF INVESTIGATION</h1>
-    <p class="subtitle">CASE MANAGEMENT WORKSTATION · FIS-OS 7.4 · AUTHORIZED PERSONNEL ONLY</p>
+    <p class="subtitle">CASE MANAGEMENT WORKSTATION · CMW 7.4 · AUTHORIZED PERSONNEL ONLY</p>
     <div class="consent">
-      <b>WARNING</b> — This is a simulated system for training and entertainment. All cases, persons, places and companies are fictitious.
-      Nothing here is an official system of, or affiliated with, any real agency. By proceeding you acknowledge that the Game Master is an AI model operating under your own API key.
+      <b>NOTICE</b> — This system is for the use of authorized Bureau personnel only. All activity on this workstation is monitored, logged and subject to audit.
+      Unauthorized access or use is prohibited and may result in disciplinary action and criminal prosecution. By authenticating you consent to these conditions.
     </div>
     <form id="loginForm" autocomplete="off">
       <label>Agent name
@@ -80,7 +80,6 @@
         <button class="btn primary" type="submit">Authenticate ▸</button>
       </div>
     </form>
-    <p class="muted small fiction">Work of fiction. The insignia is an original design and is not the seal of any agency.</p>
   </div>
 </section>
 

@@ -1,7 +1,7 @@
 // Boot sequence shown before login.
 
 const LINES = [
-  ['FIS-OS 7.4.1 secure workstation firmware', 0],
+  ['CMW-OS 7.4.1 secure workstation firmware', 0],
   ['Verifying trusted boot chain .......... OK', 1],
   ['Mounting encrypted volume /case ....... OK', 1],
   ['Loading evidence locker driver ........ OK', 1],
@@ -10,8 +10,8 @@ const LINES = [
   ['Synchronising laboratory queue ........ OK', 1],
   ['Checking AI Game Master link .......... DEFERRED (key required)', 2],
   ['', 0],
-  ['NOTICE: This system is a work of fiction for simulation and entertainment.', 0],
-  ['Unauthorised use of a real federal system is a crime. This is not one.', 0],
+  ['NOTICE: Authorized personnel only. All activity on this system is monitored and recorded.', 0],
+  ['Unauthorized access is prohibited and will be prosecuted.', 0],
   ['', 0],
   ['Press any key or wait for login prompt...', 0]
 ];

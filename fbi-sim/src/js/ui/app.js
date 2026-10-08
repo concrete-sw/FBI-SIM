@@ -32,7 +32,7 @@ export class App {
   // ---------------------------------------------------------------- startup
   async init() {
     this.applySettings();
-    this.setBanner('unclass', 'UNCLASSIFIED//TRAINING SIMULATION//FICTION');
+    this.setBanner('unclass', 'UNCLASSIFIED//FOR OFFICIAL USE ONLY');
     $('#wmInsignia').innerHTML = $('#insigniaLogin').innerHTML;
     this.setupLogin();
     this.setupNewCase();
@@ -45,7 +45,7 @@ export class App {
   showScreen(name) {
     for (const s of $$('.screen')) s.classList.add('hidden');
     $(`#screen-${name}`).classList.remove('hidden');
-    if (name === 'login' || name === 'newcase' || name === 'boot') this.setBanner('unclass', 'UNCLASSIFIED//TRAINING SIMULATION//FICTION');
+    if (name === 'login' || name === 'newcase' || name === 'boot') this.setBanner('unclass', 'UNCLASSIFIED//FOR OFFICIAL USE ONLY');
     else if (this.state) this.setCaseBanner();
   }
 
@@ -62,7 +62,7 @@ export class App {
     const marking = secret ? 'SECRET//NOFORN' : 'CUI//LES';
     let op = (t.title || 'UNTITLED').toUpperCase();
     if (!/^OPERATION\b/.test(op)) op = `OPERATION ${op}`;
-    this.setBanner(level, `${marking}//${op}//${this.state.closed ? 'CASE CLOSED' : 'ACTIVE INVESTIGATION'}//TRAINING SIMULATION`);
+    this.setBanner(level, `${marking}//${op}//${this.state.closed ? 'CASE CLOSED' : 'ACTIVE INVESTIGATION'}`);
   }
 
   applySettings() {

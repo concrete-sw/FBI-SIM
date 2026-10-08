@@ -444,7 +444,7 @@ export function registerPanels(app) {
         ].map(([c, d]) => h('tr', {}, h('td', {}, h('code', {}, c)), h('td', {}, d))))),
         h('h3', {}, 'Keys'),
         h('p', { class: 'small' }, h('kbd', {}, '/'), ' focus command bar · ', h('kbd', {}, 'Alt+1..9'), ' open panels · ', h('kbd', {}, 'Esc'), ' close focused panel · click streaming text to skip the typewriter.'),
-        h('p', { class: 'small muted' }, 'Everything is fictional. Names, places and companies are invented. The GM is an AI model using your API key; the key never leaves your browser except to that provider.'));
+        h('p', { class: 'small muted' }, 'The Game Master is an AI model using your API key; the key never leaves your browser except to that provider.'));
     }
   });
 }
