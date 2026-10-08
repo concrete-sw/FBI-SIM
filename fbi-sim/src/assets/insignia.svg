@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="Bureau insignia">
+  <defs>
+    <path id="ring" d="M100,100 m-78,0 a78,78 0 1,1 156,0 a78,78 0 1,1 -156,0"/>
+  </defs>
+  <circle cx="100" cy="100" r="96" fill="none" stroke="currentColor" stroke-width="2"/>
+  <circle cx="100" cy="100" r="88" fill="none" stroke="currentColor" stroke-width="1" opacity=".6"/>
+  <text font-family="ui-monospace, monospace" font-size="11" letter-spacing="2.5" fill="currentColor">
+    <textPath href="#ring" startOffset="2%">FEDERAL BUREAU OF INVESTIGATION · U.S. DEPARTMENT OF JUSTICE · </textPath>
+  </text>
+  <path d="M100,46 l34,12 v34 c0,26 -16,42 -34,52 c-18,-10 -34,-26 -34,-52 v-34 z" fill="none" stroke="currentColor" stroke-width="2.5"/>
+  <path d="M100,56 l25,9 v27 c0,20 -12,32 -25,40 c-13,-8 -25,-20 -25,-40 v-27 z" fill="none" stroke="currentColor" stroke-width="1" opacity=".5"/>
+  <polygon points="100,70 105.5,86 122,86 108.5,96 113.5,112 100,102 86.5,112 91.5,96 78,86 94.5,86" fill="currentColor"/>
+  <line x1="66" y1="130" x2="134" y2="130" stroke="currentColor" stroke-width="1.5"/>
+  <line x1="72" y1="136" x2="128" y2="136" stroke="currentColor" stroke-width="1" opacity=".6"/>
+  <circle cx="100" cy="100" r="2" fill="currentColor"/>
+</svg>
